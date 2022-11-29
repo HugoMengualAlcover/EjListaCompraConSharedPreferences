@@ -35,6 +35,7 @@ public class ProductosAdapter extends RecyclerView.Adapter<ProductosAdapter.Prod
     private int resource;
     private Context context;
     private SharedPreferences sharedPreferences;
+    private Gson gson;
 
     public ProductosAdapter(List<Producto> objects, int resource, Context context) {
         this.objects = objects;
@@ -204,7 +205,7 @@ public class ProductosAdapter extends RecyclerView.Adapter<ProductosAdapter.Prod
     }
 
     private void sobreescribirDatosJSON(){
-        String productosStr = new Gson().toJson(objects);
+        String productosStr = gson.toJson(objects);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(Constantes.PRODUCTOSCOMPRA, productosStr);
         editor.apply();

@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
         productosList = new ArrayList<>();
 
-        cargarDatosJSON();
+
 
         int columnas;
         //Horizontal -> 2
@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         binding.contentMain.contenedor.setAdapter(adapter);
         binding.contentMain.contenedor.setLayoutManager(layoutManager);
 
+        cargarDatosJSON();
 
         binding.fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -93,11 +94,12 @@ public class MainActivity extends AppCompatActivity {
     //Ej8
     private void cargarDatosJSON(){
         if(sharedPreferences.contains(Constantes.PRODUCTOSCOMPRA) && !sharedPreferences.getString(Constantes.PRODUCTOSCOMPRA, "").isEmpty()){
-            String productosStr = sharedPreferences.getString(Constantes.PRODUCTOSCOMPRA, "");
+            String productosStr = sharedPreferences.getString(Constantes.PRODUCTOSCOMPRA, "[]");
             Type tipo = new TypeToken< ArrayList<Producto> >(){}.getType();
-            List<Producto> temp = new Gson().fromJson(productosStr, tipo);
+            ArrayList<Producto> temp = new Gson().fromJson(productosStr, tipo);
             productosList.clear();
             productosList.addAll(temp);
+            adapter.notifyItemRangeInserted(0,temp.size());
         }
     }
 
