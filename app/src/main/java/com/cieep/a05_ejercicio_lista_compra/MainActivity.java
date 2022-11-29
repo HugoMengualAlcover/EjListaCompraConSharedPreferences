@@ -1,12 +1,14 @@
 package com.cieep.a05_ejercicio_lista_compra;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 
 import com.cieep.a05_ejercicio_lista_compra.adapters.ProductosAdapter;
 import com.cieep.a05_ejercicio_lista_compra.modelos.Producto;
-import com.google.android.material.snackbar.Snackbar;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -20,15 +22,17 @@ import android.view.View;
 
 
 import com.cieep.a05_ejercicio_lista_compra.databinding.ActivityMainBinding;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.lang.reflect.Type;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,9 +44,14 @@ public class MainActivity extends AppCompatActivity {
     private ProductosAdapter adapter;
     private RecyclerView.LayoutManager layoutManager;
 
+    //Ej8
+    private SharedPreferences sharedPreferences;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        sharedPreferences = getSharedPreferences(Constantes.DATOS, MODE_PRIVATE);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -50,8 +59,16 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(binding.toolbar);
         productosList = new ArrayList<>();
 
+        cargarDatosJSON();
+
+        int columnas;
+        //Horizontal -> 2
+        //Vertical -> 1
+        //DESDE LAS CONFIGURACIONES DE LA ACTIVIDAD -> orientation // PORTRAIT(vertical) / LANDSCAPE(horizontal)
+        columnas = getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT ? 1 : 2;
+
         adapter = new ProductosAdapter(productosList, R.layout.producto_model_card, this);
-        layoutManager = new GridLayoutManager(this, 1);
+        layoutManager = new GridLayoutManager(this, columnas);
         binding.contentMain.contenedor.setAdapter(adapter);
         binding.contentMain.contenedor.setLayoutManager(layoutManager);
 
@@ -64,10 +81,31 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    //Ej8
+    private void guardarDatosJSON() {
+        String productosStr = new Gson().toJson(productosList);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(Constantes.PRODUCTOSCOMPRA, productosStr);
+        editor.apply();
+    }
+
+    //Ej8
+    private void cargarDatosJSON(){
+        if(sharedPreferences.contains(Constantes.PRODUCTOSCOMPRA) && !sharedPreferences.getString(Constantes.PRODUCTOSCOMPRA, "").isEmpty()){
+            String productosStr = sharedPreferences.getString(Constantes.PRODUCTOSCOMPRA, "");
+            Type tipo = new TypeToken< ArrayList<Producto> >(){}.getType();
+            List<Producto> temp = new Gson().fromJson(productosStr, tipo);
+            productosList.clear();
+            productosList.addAll(temp);
+        }
+    }
+
+
     private AlertDialog creteProducto() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        builder.setTitle("Agregar Producto");
+        builder.setTitle(getString(R.string.alert_title_crear));
         builder.setCancelable(false);
 
         View productoAlertView = LayoutInflater.from(this).inflate(R.layout.producto_model_alert, null);
@@ -124,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
         txtCantidad.addTextChangedListener(textWatcher);
         txtPrecio.addTextChangedListener(textWatcher);
 
-        builder.setNegativeButton("CANCELAR", null);
-        builder.setPositiveButton("AGREGAR", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(getString(R.string.btn_alert_cancel), null);
+        builder.setPositiveButton(getString(R.string.btn_alert_crear), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 if (!txtNombre.getText().toString().isEmpty()
@@ -138,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
                     );
                     productosList.add(0, producto);
                     adapter.notifyItemInserted(0);
+                    guardarDatosJSON();
                 }
                 else {
                     Toast.makeText(MainActivity.this, "FALTAN DATOS", Toast.LENGTH_SHORT).show();
@@ -147,4 +186,30 @@ public class MainActivity extends AppCompatActivity {
 
         return builder.create();
     }
+
+
+
+
+    /**
+     * Se dispara antes de que se elimine la actividad
+     * @param outState -> guardo los datos
+     */
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable("LISTA", productosList);
+    }
+
+    /**
+     * Se dispara despues de crear la actividad dfe nuevo
+     * @param savedInstanceState -> recupero los datos
+     */
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        ArrayList<Producto> temp = (ArrayList<Producto>) savedInstanceState.getSerializable("LISTA");
+        productosList.addAll(temp);
+        adapter.notifyItemRangeInserted(0, productosList.size());
+    }
+
 }
